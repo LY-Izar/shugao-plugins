@@ -17,4 +17,8 @@ jobs:
         with:
           node-version: '20'
       - name: 逐个插件检查
+        # BASE_REF 只在 PR 上有值（= 目标分支）。推送 main 时为空 ⇒ 跳过"版本只增"那一条：
+        # 推 main 的时候"上一个版本"就是 main 自己，比了必然红（2026-10-24 真踩过）。
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: node .github/check.mjs

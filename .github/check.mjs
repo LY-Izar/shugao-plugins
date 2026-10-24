@@ -46,9 +46,22 @@ const bad = (m) => {
   console.log(`[FAIL] ${m}`)
 }
 
+/**
+ * 同 id 的"上一个版本"。
+ * 🔴 **只在 PR 上比**（`BASE_REF` = 目标分支）。推 main 的时候没有"上一个版本"可比 ——
+ *    `origin/main` 指向的就是这次提交自己，比了必然红。2026-10-24 首跑就是这么红的：
+ *    两条都是 failure，一条是行尾被网页粘贴改成 CRLF、另一条就是这个自比较。
+ */
+const BASE_REF = (process.env.BASE_REF ?? '').trim()
 const prevVersion = (id) => {
+  if (!BASE_REF) return null
   try {
-    const raw = execSync(`git show origin/main:plugins/${id}/manifest.json`, {
+    execSync(`git fetch --depth=50 origin ${BASE_REF}`, { stdio: ['pipe', 'pipe', 'ignore'] })
+  } catch {
+    /* fetch 失败时下面那句会抛，被 catch 成 null ⇒ 跳过版本比较，不会误红 */
+  }
+  try {
+    const raw = execSync(`git show origin/${BASE_REF}:plugins/${id}/manifest.json`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore'],
     })
