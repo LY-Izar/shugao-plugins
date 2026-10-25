@@ -3,7 +3,7 @@
   "name": "教室考勤",
   "icon": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='10' y='10' width='44' height='44' rx='10' fill='none' stroke='currentColor' stroke-width='4'/><path d='M20 32l8 8 16-18' fill='none' stroke='currentColor' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>",
   "description": "座位排布、人工考勤确认与离线演练；自动拍照需本机服务接入",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "entry": "index.js",
   "minShellVersion": "1.1.5",
   "permissions": ["data.roster", "bus", "clock", "sound", "files"],
