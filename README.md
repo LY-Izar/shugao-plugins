@@ -4,7 +4,8 @@
 
 ```text
 plugins/
-└─ shugao.quote/             ← 目录名必须等于 manifest 里的 id
+├─ shugao.quote/             ← 目录名必须等于 manifest 里的 id
+└─ shugao.daily/             ← 每日作业、值日生与今日课表
    ├─ manifest.json          ← 说明书（字段见宿主仓库《教室端插件开发手册.md》§2.1）
    ├─ index.js               ← 单文件 ESM，export default { activate, deactivate }
    └─ index.js.sha256        ← 入口指纹，一行十六进制
@@ -12,6 +13,9 @@ plugins/
 
 `plugins/<id>/` 里放的**永远是当前版本**。历史版本不用另建目录 —— 每次发布会把
 `commit` 与 `sha256` 一起钉进登记表，旧版本靠 git 历史随时取得到。
+
+`shugao.daily` 1.1.0 使用宿主的 `class.todaySchedule` 资源，要求教室端插件壳至少
+1.1.6。日期由宿主时钟提供，今日课表与主屏共用临时调课、调休选课和周一顺延的结果。
 
 ---
 
