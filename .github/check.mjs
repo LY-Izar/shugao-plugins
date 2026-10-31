@@ -22,6 +22,8 @@ const PERMS = new Set([
   'data.duty',
   'data.assignments',
   'data.quote',
+  'data.exams',
+  'data.gradedHomework',
   'config',
   'clock',
   'bus',
@@ -29,6 +31,8 @@ const PERMS = new Set([
   'pip',
   'files',
   'keepAwake',
+  'read',
+  'write',
 ])
 /** 手册 §11 禁区里能静态判的那几条 */
 const BANNED = [
@@ -127,6 +131,35 @@ for (const d of dirs) {
   if (m.capabilities) bad(`${id}: 字段名是 permissions，不是 capabilities`)
   if (!Array.isArray(m.permissions) || m.permissions.length === 0) bad(`${id}: permissions 缺失或为空`)
   else for (const p of m.permissions) if (!PERMS.has(p)) bad(`${id}: 不认识的能力 ${p}`)
+  const perms = Array.isArray(m.permissions) ? m.permissions : []
+  if (perms.includes('read') && (!Array.isArray(m.reads) || !m.reads.length))
+    bad(`${id}: 申请 read 必须在 reads 逐张声明表和理由`)
+  if (m.reads !== undefined && (!Array.isArray(m.reads) || m.reads.length > 12 || !perms.includes('read')))
+    bad(`${id}: reads 必须是至多 12 张的数组，且需要 read 能力`)
+  if (Array.isArray(m.reads)) {
+    const seen = new Set()
+    for (const item of m.reads) {
+      if (!item || typeof item.table !== 'string' || !item.table || seen.has(item.table) ||
+          typeof item.why !== 'string' || !item.why.trim() || item.why.length > 40)
+        bad(`${id}: reads 中每张表须唯一，并写 1–40 字理由`)
+      seen.add(item?.table)
+    }
+  }
+  if (perms.includes('write') && (!Array.isArray(m.writes) || !m.writes.length))
+    bad(`${id}: 申请 write 必须在 writes 逐张声明表和理由`)
+  if (m.teacherResults !== undefined) {
+    if (!Array.isArray(m.teacherResults) || m.teacherResults.length > 12 || !perms.includes('storage'))
+      bad(`${id}: teacherResults 至多 12 项，且需要 storage 能力`)
+    else {
+      const seen = new Set()
+      for (const item of m.teacherResults) {
+        if (!item || typeof item.key !== 'string' || !/^[a-z0-9][a-z0-9_.-]{0,63}$/.test(item.key) ||
+            seen.has(item.key) || typeof item.label !== 'string' || !item.label.trim() || item.label.length > 24)
+          bad(`${id}: teacherResults 的 key 须唯一且合法，label 为 1–24 字`)
+        seen.add(item?.key)
+      }
+    }
+  }
   if (!SEMVER.test(m.version ?? '')) bad(`${id}: version 必须是 主.次.修，实际 ${String(m.version)}`)
   if (!Array.isArray([m.name]) || typeof m.name !== 'string' || !m.name.trim()) bad(`${id}: 缺 name`)
   if (typeof m.description !== 'string' || !m.description.trim()) bad(`${id}: 缺 description`)

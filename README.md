@@ -16,19 +16,19 @@ plugins/
 `plugins/<id>/` 里放的**永远是当前版本**。历史版本不用另建目录 —— 每次发布会把
 `commit` 与 `sha256` 一起钉进登记表，旧版本靠 git 历史随时取得到。
 
-## 库里长期留的三个**示例**
+## 插件目录
 
 | 示例 | 看它学什么 |
 |---|---|
 | `shugao.quote` | **最小可用**：一个资源（`class.quote`）+ 一个时钟事件，几十行就能看完 |
 | `shugao.daily` | **多资源凑一屏**：`data.dailyHomework` + `data.duty` + `data.schedule` 三个能力一起用，带窗口尺寸与空态 |
+| `shugao.duty` | 值日生展示 |
+| `shugao.exams` | 考试展示 |
+| `shugao.review` | 作业讲评 |
+| `shugao.schedule` | 班级课表 |
 | `ruofeng.class-attendance` | **第三方插件的完整样子**：多能力（`data.roster` / `bus` / `clock` / `sound` / `files`）、有窗口尺寸、有降级分支 |
 
-🔴 **内置插件原则上不进这个库**：每日作业、值日生、班级课表、作业讲评、每日祝福语这些是
-**跟教室端 exe 一起打包**的，它们的「当前版本」就是包里那一份。上面 `shugao.daily` 与
-`shugao.quote` 是**按用户要求留在库里的同源副本**（当示例读），所以：
-**改它们请改宿主仓库那一份，再同步过来**，别只改库里 —— 只改一边就是两个真相，
-2026-10-25 就因此出现过"库里写要求壳 1.1.6、教室端只有 1.1.5"这种对不上。
+正式环境的插件统一从本 Git 仓库按已审核的提交读取。教室端程序只提供插件宿主；插件新增或更新经管理员发布后直接加载，无须重发安装包。插件使用宿主尚未提供的新能力时，仍需先升级宿主。
 
 ---
 
@@ -57,11 +57,24 @@ git push -u origin plugin/<你的插件 id>
 ```text
 改了什么：
 version：1.0.0（首个版本，或 1.0.0 → 1.1.0）
-新增能力：data.schedule（要读本班课表）／无新增数据槽 key
+新增能力和读表申请：例如 read，reads 中声明 students 与用途
+教师端结果：如需展示，在 teacherResults 中列出 storage 槽名与展示名称；否则写无
 自检：plugin-framework-checks --plugin plugins/<id> 全绿
 ```
 
-**合并与发布由超管做。** 合并之后在平台 `/admin` 的「插件」分区发布，才会下发到教室端。
+**审核与发布由超管做。** 管理端 `/admin` 从 `plugin/<id>` 分支读取提交、检查插件代码与数据权限，检查通过后发布该提交。合并 PR 时保留该提交的 Git 历史；发布完成前保留待审分支。仅提交或合并 PR 不会使插件自动上线。
+
+插件在 `manifest.json` 声明 `permissions`、`reads` 和可选的 `teacherResults`。例如申请只读本班学生名单，并向教师端展示插件算出的汇总：
+
+```json
+{
+  "permissions": ["read", "storage"],
+  "reads": [{ "table": "students", "why": "读取本班学生名单并计算汇总" }],
+  "teacherResults": [{ "key": "summary", "label": "班级汇总" }]
+}
+```
+
+插件用 `ctx.data.readTable('students')` 获取当前数据，用 `ctx.data.watchTable('students', callback)` 接收更新通知后重新读取；只有管理员批准的表会进入运行时权限。插件用 `ctx.storage.set('summary', value)` 保存结果，教师端只读取已审核的 `teacherResults` 槽。通知由实时通道传递，断线重连时重新读取，另有低频兜底检查。
 
 ---
 
@@ -86,9 +99,7 @@ version：1.0.0（首个版本，或 1.0.0 → 1.1.0）
 2. 插件**不许自己联网**（没有 `fetch` / `WebSocket`），也不许碰宿主的 `localStorage`；
    要数据就走宿主资源（手册 §6.1）。
 3. **不许写真实学生/教师信息**：姓名、学号、手机号、身份证号一个都不许进代码或注释。
-4. **内置插件原则上不进这个库**：库里那两份（`shugao.daily` / `shugao.quote`）是
-   **按用户要求留的同源副本，当示例读**，不是发布源。它们的版本跟着教室端 exe 走，
-   改动请改宿主仓库那一份再同步 —— 别只改库里。
+4. 正式插件只从本 Git 仓库加载已发布的提交。改动插件代码后必须提升版本号、更新指纹并重新经过管理员审核；不能直接替换已发布提交。
 
 ---
 
